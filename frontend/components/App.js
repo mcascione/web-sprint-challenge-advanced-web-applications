@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { NavLink, Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import {
+  NavLink,
+  Routes,
+  Route,
+  useNavigate,
+  Navigate,
+} from "react-router-dom";
 import Articles from "./Articles";
 import LoginForm from "./LoginForm";
 import Message from "./Message";
@@ -7,8 +13,8 @@ import ArticleForm from "./ArticleForm";
 import Spinner from "./Spinner";
 import axiosWithAuth from "../axios";
 
-const articlesUrl = '/articles'
-const loginUrl = '/login'
+const articlesUrl = "/articles";
+const loginUrl = "/login";
 
 export default function App() {
   // ✨ MVP can be achieved with these states
@@ -73,13 +79,11 @@ export default function App() {
     setSpinnerOn(!spinnerOn);
     axiosWithAuth()
       .get(articlesUrl)
-        .then(res => {
-          setArticles(res.data.articles);
-          setMessage(res.data.message);
-        })
-        .catch(err => 
-          err.response.status === "401" ? ("/") : console.log(err)
-        );
+      .then((res) => {
+        setArticles(res.data.articles);
+        setMessage(res.data.message);
+      })
+      .catch((err) => (err.response.status === "401" ? "/" : console.log(err)));
     setSpinnerOn(false);
   };
 
@@ -88,15 +92,63 @@ export default function App() {
     // The flow is very similar to the `getArticles` function.
     // You'll know what to do! Use log statements or breakpoints
     // to inspect the response from the server.
+    setMessage("");
+    setSpinnerOn(!spinnerOn);
+    axiosWithAuth()
+      .post(articlesUrl, article)
+      .then((res) => {
+        setArticles([...articles, res.data.article]);
+        setMessage(res.data.message);
+      })
+      .catch((err) => {
+        setMessage("Fill out all values and select a topic.");
+        console.log(err);
+      });
+    setSpinnerOn(false);
   };
 
-  const updateArticle = ({ article_id, article }) => {
+  const updateArticle = (article_id, article) => {
+    setMessage("");
+    setSpinnerOn(!spinnerOn);
+    axiosWithAuth()
+      .put(`${articlesUrl}/${article_id}`, article)
+      .then((res) => {
+        const newArticles = [...articles];
+        const newArticle = res.data.article;
+        const indexOfArticleToBeReplaced = newArticles.findIndex(
+          ({ article_id }) => article_id === newArticle.article_id
+        );
+        if (indexOfArticleToBeReplaced >= 0) {
+          newArticles[indexOfArticleToBeReplaced] = newArticle;
+        }
+        setArticles(newArticles);
+
+        setMessage(res.data.message);
+      })
+      .catch((err) => {
+        err.response.status === "401" ? "/" : console.log(err);
+      });
+    setSpinnerOn(false);
     // ✨ implement
     // You got this!
   };
 
   const deleteArticle = (article_id) => {
     // ✨ implement
+    setMessage("");
+    setSpinnerOn(!spinnerOn);
+    axiosWithAuth()
+      .delete(`${articlesUrl}/${article_id}`)
+       .then(res => {
+          setMessage(res.data.message)
+          setArticles(articles.filter((article) => {
+              return article.article_id !== article_id
+          }));
+       })
+       .catch(err => {
+        console.log(err)
+       })
+    setSpinnerOn(false);
   };
 
   return (
@@ -130,6 +182,7 @@ export default function App() {
                   updateArticle={updateArticle}
                   setCurrentArticleId={setCurrentArticleId}
                   postArticle={postArticle}
+                  currentArticle={currentArticleId}
                 />
                 <Articles
                   articles={articles}
